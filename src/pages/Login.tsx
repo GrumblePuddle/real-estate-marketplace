@@ -1,10 +1,36 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import Navbar from "../components/Navbar";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase";
+import { useState } from "react";
 
 const Login = () => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   // TODO: Hantera formulärdata
   // TODO: Logga in med Firebase
   // TODO: Hantera eventuella fel
+  const navigate = useNavigate();
+
+  const onLogin = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+    const email = String(formData.get("email") || "");
+    const password = String(formData.get("password") || "");
+    // TODO: Implement login logic with Firebase
+
+    try {
+      setIsLoading(true);
+      await signInWithEmailAndPassword(auth, email, password);
+      navigate("/listings");
+    } catch (error) {
+      console.error("Error signing in:", error);
+      setErrorMessage("Felaktig e-postadress eller lösenord.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen flex-col bg-white">
@@ -22,7 +48,7 @@ const Login = () => {
             </p>
           </div>
 
-          <form className="space-y-5">
+          <form className="space-y-5" onSubmit={onLogin}>
             <div>
               <label htmlFor="email" className="mb-2 block text-sm font-medium">
                 E-postadress
@@ -58,13 +84,13 @@ const Login = () => {
               />
             </div>
 
-            {/* TODO: Visa felmeddelande här */}
+            {errorMessage && <div className="text-red-500">{errorMessage}</div>}
 
             <button
               type="submit"
               className="w-full cursor-pointer rounded-lg bg-gray-900 px-6 py-3 font-medium text-white transition hover:bg-gray-700"
             >
-              Logga in
+              {isLoading ? "Loggar in..." : "Logga in"}
             </button>
           </form>
 
