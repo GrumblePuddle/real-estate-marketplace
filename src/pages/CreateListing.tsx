@@ -1,13 +1,67 @@
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { ImagePlus } from "lucide-react";
 import Navbar from "../components/Navbar";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "../firebase";
+import { useAuth } from "../context/AuthContext";
+import { useState } from "react";
 
 const CreateListing = () => {
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   // TODO: Hantera formuläret
   // TODO: Kontrollera att användaren är inloggad
   // TODO: Spara annonsen i Firestore
   // TODO: Hantera bilduppladdning senare
   // TODO: Hantera loading och felmeddelanden
+  const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const submitForm = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setErrorMessage(null);
+
+    if (!user) {
+      // Hantera att användaren inte är inloggad
+      return;
+    }
+
+    const formData = new FormData(e.currentTarget);
+    const title = String(formData.get("title") || "").trim();
+    const city = String(formData.get("city") || "").trim();
+    const price = Number(formData.get("price") || 0);
+    const rooms = Number(formData.get("rooms") || 0);
+    const area = Number(formData.get("area") || 0);
+    const description = String(formData.get("description") || "").trim();
+
+    if (price <= 0 || rooms <= 0 || area <= 0) {
+      setErrorMessage("Ange giltiga värden för bostaden.");
+      return;
+    }
+
+    const newListing = {
+      title,
+      city,
+      price,
+      rooms,
+      area,
+      description,
+      ownerId: user.uid,
+      createdAt: serverTimestamp(),
+    };
+
+    setIsLoading(true);
+    try {
+      await addDoc(collection(db, "listings"), newListing);
+      navigate("/listings");
+      // TODO: Visa bekräftelsemeddelande
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      setErrorMessage("Ett fel uppstod när annonsen skulle sparas.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -23,7 +77,10 @@ const CreateListing = () => {
           </p>
         </div>
 
-        <form className="space-y-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
+        <form
+          className="space-y-8 rounded-2xl border border-gray-200 bg-white p-8 shadow-sm"
+          onSubmit={submitForm}
+        >
           <section className="space-y-5">
             <h2 className="text-lg font-semibold">Bostadsinformation</h2>
 
@@ -158,7 +215,11 @@ const CreateListing = () => {
             {/* TODO: Visa förhandsvisning av vald bild */}
           </section>
 
-          {/* TODO: Visa felmeddelande här */}
+          {errorMessage && (
+            <div className="rounded-lg bg-red-100 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
 
           <div className="flex flex-col-reverse justify-end gap-3 border-t border-gray-200 pt-6 sm:flex-row">
             <Link
@@ -170,9 +231,10 @@ const CreateListing = () => {
 
             <button
               type="submit"
-              className="cursor-pointer rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700"
+              disabled={isLoading}
+              className="cursor-pointer rounded-lg bg-gray-900 px-6 py-3 text-sm font-medium text-white transition hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              Publicera annons
+              {isLoading ? "Sparar annons..." : "Publicera annons"}
             </button>
           </div>
         </form>
