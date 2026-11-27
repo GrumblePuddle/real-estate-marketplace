@@ -3,6 +3,7 @@ import { ChevronDown, CircleUserRound, LogOut } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { auth } from "../firebase";
 import { signOut } from "firebase/auth";
+import { Link } from "react-router";
 
 const AccountDropdown = () => {
   const { user } = useAuth();
@@ -68,6 +69,13 @@ const AccountDropdown = () => {
             </p>
             <p className="truncate text-xs text-gray-500">{user?.email}</p>
           </div>
+
+          <Link
+            to="/create-listing"
+            className="block px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-100"
+          >
+            Skapa annons
+          </Link>
 
           <button
             type="button"
